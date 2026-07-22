@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Arena Vista 3D</title>
+
+    <!-- AFrame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+    <!-- Paho MQTT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+    <style>
+      #connessione-status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 999;
+        background: #aa0000;
+        color: white;
+      }
+      #connessione-status.connesso {
+        background: #00aa44;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- Status connessione -->
+    <div id="connessione-status">● Disconnesso</div>
+
+    <!-- SCENA AFRAME -->
+    <a-scene background="color: #1a1a2e">
+
+      <!-- Luci -->
+      <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
+      <a-light type="directional" position="10 20 10" intensity="0.8"></a-light>
+
+      <!-- Arena pavimento -->
+      <a-box
+        id="arena"
+        position="0 0 0"
+        width="30"
+        height="0.5"
+        depth="30"
+        color="#2d4a22">
+      </a-box>
+
+      <!-- Muri -->
+      <a-box id="muro1" position="0 1.5 -15" width="30" height="3" depth="0.5" color="#555555"></a-box>
+      <a-box id="muro2" position="0 1.5 15" width="30" height="3" depth="0.5" color="#555555"></a-box>
+      <a-box id="muro3" position="-15 1.5 0" width="0.5" height="3" depth="30" color="#555555"></a-box>
+      <a-box id="muro4" position="15 1.5 0" width="0.5" height="3" depth="30" color="#555555"></a-box>
+
+      <!-- Player -->
+      <a-cylinder
+        id="player"
+        position="0 1 0"
+        radius="0.5"
+        height="2"
+        color="#0066ff">
+      </a-cylinder>
+
+      <!-- Palla -->
+      <a-sphere
+        id="palla"
+        position="1 1 1"
+        radius="0.5"
+        color="#ff4400">
+      </a-sphere>
+
+      <!-- Palo canestro -->
+      <a-cylinder
+        position="5 2 -13"
+        radius="0.15"
+        height="4"
+        color="#888888">
+      </a-cylinder>
+
+      <!-- Tabellone -->
+      <a-box
+        id="tabellone"
+        position="5 4.5 -13"
+        width="3"
+        height="2"
+        depth="0.2"
+        color="#cccccc">
+      </a-box>
+
+      <!-- Camera obliqua semi dall'alto fissa -->
+      <a-camera
+        position="0 25 20"
+        rotation="-50 0 0"
+        wasd-controls-enabled="false"
+        look-controls-enabled="false">
+      </a-camera>
+
+      <!-- Testo punteggio nella scena -->
+      <a-text
+        id="scoreText"
+        value="Punti: 0"
+        position="-5 8 -10"
+        scale="3 3 3"
+        color="#ffffff">
+      </a-text>
+
+      <!-- Testo stato nella scena -->
+      <a-text
+        id="statoText"
+        value="Stato: play"
+        position="-5 6 -10"
+        scale="3 3 3"
+        color="#00ff00">
+      </a-text>
+
+    </a-scene>
+
+    <script>
+      // CONFIGURAZIONE MQTT
+      const BROKER_IP = "IP_PC_PRINCIPALE"; // da cambiare dopo
+      const BROKER_PORT = 9001;
+      const CLIENT_ID = "aframe_" + Math.random().toString(16).substr(2, 8);
+
+      // RIFERIMENTI OGGETTI AFRAME
+      const playerEl = document.getElementById("player");
+      const pallaEl = document.getElementById("palla");
+      const scoreText = document.getElementById("scoreText");
+      const statoText = document.getElementById("statoText");
+      const statusEl = document.getElementById("connessione-status");
+
+      // CLIENT MQTT
+      const client = new Paho.MQTT.Client(BROKER_IP, BROKER_PORT, CLIENT_ID);
+
+      client.onMessageArrived = function(message) {
+        const topic = message.destinationName;
+
+        let payload;
+        try {
+          payload = JSON.parse(message.payloadString);
+        } catch(e) {
+          console.log("Errore parsing JSON:", e);
+          return;
+        }
+        // pos giocatore
+        if (topic === "unity/player/position") {
+          playerEl.setAttribute("position", {
+            x: payload.x,
+            y: payload.y,
+            z: payload.z
+          });
+        } // pos palla
+        else if (topic === "unity/palla/position") {
+          pallaEl.setAttribute("position", {
+            x: payload.x,
+            y: payload.y,
+            z: payload.z
+          });
+        }
+        // punteggio
+        else if (topic === "unity/game/score") {
+          scoreText.setAttribute("value", "Punti: " + payload.punteggio);
+        }
+        // stato
+        else if (topic === "unity/game/state") {
+          statoText.setAttribute("value", "Stato: " + payload.stato);
+          statoText.setAttribute("color", payload.stato === "play" ? "#00ff00" : "#ff0000");
+        }
+      };
+
+      client.onConnectionLost = function(response) {
+        console.log("Connessione persa:", response.errorMessage);
+        statusEl.textContent = "● Disconnesso";
+        statusEl.className = "";
+        setTimeout(connetti, 3000);
+      };
+
+      function connetti() {
+        client.connect({
+          onSuccess: function() {
+            console.log("Connesso al broker MQTT!");
+            statusEl.textContent = "● Connesso";
+            statusEl.className = "connesso";
+            client.subscribe("unity/player/position");
+            client.subscribe("unity/palla/position");
+            client.subscribe("unity/game/score");
+            client.subscribe("unity/game/state");
+          },
+          onFailure: function(err) {
+            console.log("Errore connessione:", err.errorMessage);
+            statusEl.textContent = "● Disconnesso";
+            statusEl.className = "";
+            setTimeout(connetti, 3000);
+          },
+          useSSL: false
+        });
+      }
+
+      connetti();
+    </script>
+
+  </body>
+</html>
