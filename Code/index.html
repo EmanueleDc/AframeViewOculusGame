@@ -4,13 +4,66 @@
     <meta charset="utf-8">
     <title>Arena Vista 3D</title>
 
-    <!-- AFrame -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-
-    <!-- Paho MQTT -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
     <style>
+      #info-panel {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        z-index: 999;
+        min-width: 200px;
+      }
+      #info-panel h3 {
+        margin: 0 0 10px 0;
+        color: #00ff88;
+        font-size: 18px;
+      }
+      .info-row {
+        margin: 5px 0;
+        display: flex;
+        justify-content: space-between;
+      }
+      .info-label { color: #aaaaaa; }
+      .info-value { color: #ffffff; font-weight: bold; }
+      #stato-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: bold;
+        background: #00aa44;
+      }
+      #reset-btn {
+        margin-top: 10px;
+        width: 100%;
+        padding: 8px;
+        background: #0066ff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #reset-btn:hover { background: #0044cc; }
+      #istruzioni {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        color: #aaaaaa;
+        padding: 10px;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        z-index: 999;
+      }
       #connessione-status {
         position: fixed;
         top: 20px;
@@ -24,157 +77,240 @@
         background: #aa0000;
         color: white;
       }
-      #connessione-status.connesso {
-        background: #00aa44;
-      }
+      #connessione-status.connesso { background: #00aa44; }
     </style>
   </head>
 
   <body>
 
-    <!-- Status connessione -->
+    <div id="info-panel">
+      <h3>🏀 Arena Info</h3>
+      <div class="info-row">
+        <span class="info-label">Punti:</span>
+        <span class="info-value" id="ui-punti">0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Stato:</span>
+        <span id="stato-badge">PLAY</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Player X:</span>
+        <span class="info-value" id="ui-player-x">0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Player Z:</span>
+        <span class="info-value" id="ui-player-z">0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Palla X:</span>
+        <span class="info-value" id="ui-palla-x">0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Palla Z:</span>
+        <span class="info-value" id="ui-palla-z">0</span>
+      </div>
+      <button id="reset-btn" onclick="resetCamera()">🎥 Reset Camera</button>
+    </div>
+
     <div id="connessione-status">● Disconnesso</div>
 
-    <!-- SCENA AFRAME -->
+    <div id="istruzioni">
+      🖱️ Click sinistro + trascina → Ruota & Inclina vista<br>
+      🖱️ Scroll → Zoom avanti/indietro<br>
+      ⌨️ R → Reset camera
+    </div>
+
     <a-scene background="color: #1a1a2e">
 
-      <!-- Luci -->
       <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
       <a-light type="directional" position="10 20 10" intensity="0.8"></a-light>
 
-      <!-- Arena pavimento -->
-      <a-box
-        id="arena"
-        position="0 0 0"
-        width="30"
-        height="0.5"
-        depth="30"
-        color="#2d4a22">
-      </a-box>
+      <!-- Pavimento -->
+      <a-box position="0 0 0" width="30" height="0.5" depth="30" color="#9c3e27"></a-box>
 
       <!-- Muri -->
-      <a-box id="muro1" position="0 1.5 -15" width="30" height="3" depth="0.5" color="#555555"></a-box>
-      <a-box id="muro2" position="0 1.5 15" width="30" height="3" depth="0.5" color="#555555"></a-box>
-      <a-box id="muro3" position="-15 1.5 0" width="0.5" height="3" depth="30" color="#555555"></a-box>
-      <a-box id="muro4" position="15 1.5 0" width="0.5" height="3" depth="30" color="#555555"></a-box>
+      <a-box position="0 3 -15" width="30" height="6" depth="0.5" color="#3a3a3a"></a-box>
+      <a-box position="0 1.5 15" width="30" height="3" depth="0.5" color="#3a3a3a"></a-box>
+      <a-box position="-15 1.5 0" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
+      <a-box position="15 1.5 0" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
 
       <!-- Player -->
-      <a-cylinder
-        id="player"
-        position="0 1 0"
-        radius="0.5"
-        height="2"
-        color="#0066ff">
-      </a-cylinder>
+      <a-cylinder id="player" position="0 1 0" radius="0.5" height="2" color="#0066ff"></a-cylinder>
 
       <!-- Palla -->
-      <a-sphere
-        id="palla"
-        position="1 1 1"
-        radius="0.5"
-        color="#ff4400">
-      </a-sphere>
+      <a-sphere id="palla" position="1 1 1" radius="0.5" color="#ff4400"></a-sphere>
 
       <!-- Palo canestro -->
-      <a-cylinder
-        position="5 2 -13"
-        radius="0.15"
-        height="4"
-        color="#888888">
-      </a-cylinder>
+      <a-cylinder position="5 2 -13" radius="0.15" height="4" color="#888888"></a-cylinder>
 
       <!-- Tabellone -->
-      <a-box
-        id="tabellone"
-        position="5 4.5 -13"
-        width="3"
-        height="2"
-        depth="0.2"
-        color="#cccccc">
-      </a-box>
+      <a-box position="5 4.5 -12.9" width="3" height="2" depth="0.2" color="#9c3e27"></a-box>
 
-      <!-- Camera obliqua semi dall'alto fissa -->
-      <a-camera
-        position="0 25 20"
-        rotation="-50 0 0"
-        wasd-controls-enabled="false"
-        look-controls-enabled="false">
-      </a-camera>
-
-      <!-- Testo punteggio nella scena -->
-      <a-text
-        id="scoreText"
-        value="Punti: 0"
-        position="-5 8 -10"
-        scale="3 3 3"
-        color="#ffffff">
-      </a-text>
-
-      <!-- Testo stato nella scena -->
-      <a-text
-        id="statoText"
-        value="Stato: play"
-        position="-5 6 -10"
-        scale="3 3 3"
-        color="#00ff00">
-      </a-text>
+      <!-- CAMERA CON DOPPIO PIVOT PER ORBITA 3D COMPLETA -->
+      <a-entity id="pivot-orizzontale" position="0 0 0">
+        <a-entity id="pivot-verticale" position="0 0 0">
+          <a-camera
+            id="main-camera"
+            position="0 0 35"
+            fov="60"
+            look-controls-enabled="false"
+            wasd-controls-enabled="false">
+          </a-camera>
+        </a-entity>
+      </a-entity>
 
     </a-scene>
 
     <script>
-      // CONFIGURAZIONE MQTT
-      const BROKER_IP = "IP_PC_PRINCIPALE"; // da cambiare dopo
+      const BROKER_IP = "192.168.66.121";
       const BROKER_PORT = 9001;
       const CLIENT_ID = "aframe_" + Math.random().toString(16).substr(2, 8);
 
-      // RIFERIMENTI OGGETTI AFRAME
       const playerEl = document.getElementById("player");
       const pallaEl = document.getElementById("palla");
-      const scoreText = document.getElementById("scoreText");
-      const statoText = document.getElementById("statoText");
+      const uiPunti = document.getElementById("ui-punti");
+      const uiStatoBadge = document.getElementById("stato-badge");
+      const uiPlayerX = document.getElementById("ui-player-x");
+      const uiPlayerZ = document.getElementById("ui-player-z");
+      const uiPallaX = document.getElementById("ui-palla-x");
+      const uiPallaZ = document.getElementById("ui-palla-z");
       const statusEl = document.getElementById("connessione-status");
 
-      // CLIENT MQTT
+
+      // GESTIONE CAMERA
+      const pivotOrizzontale = document.getElementById("pivot-orizzontale");
+      const pivotVerticale = document.getElementById("pivot-verticale");
+      const cameraEl = document.getElementById("main-camera");
+
+      let rotazioneOrizzontale = 0;   // Ruota attorno al campo (sinistra/destra)
+      let inclinazioneVerticale = 30; // Alzata/abbassata della vista (30° iniziale)
+      let distanza = 35;              // Zoom (distanza fisica dal centro)
+
+      const INCLINAZIONE_MIN = 5;     // Limite: quasi a livello del campo
+      const INCLINAZIONE_MAX = 85;    // Limite: quasi del tutto dall'alto
+      const DIST_MIN = 10;            // Zoom massimo vicino
+      const DIST_MAX = 60;            // Zoom massimo lontano
+
+      let isDragging = false;
+      let lastMouseX = 0;
+      let lastMouseY = 0;
+
+      function aggiornaCamera() {
+        // Rotazione orizzontale (Giro attorno al centro)
+        pivotOrizzontale.setAttribute("rotation", `0 ${rotazioneOrizzontale} 0`);
+        
+        // Inclinazione verticale (Su / Giù)
+        pivotVerticale.setAttribute("rotation", `-${inclinazioneVerticale} 0 0`);
+        
+        // Imposta la distanza (zoom)
+        cameraEl.setAttribute("position", `0 0 ${distanza}`);
+        
+        // Sguardo sempre puntato al centro dell'arena (0,0,0)
+        if (cameraEl.getObject3D('camera')) {
+          cameraEl.getObject3D('camera').lookAt(0, 0, 0);
+        }
+      }
+
+      // Attende il caricamento di A-Frame per la prima inquadratura
+      cameraEl.addEventListener('loaded', () => {
+        aggiornaCamera();
+      });
+       
+      // click del mouse
+      document.addEventListener("mousedown", function(e) {
+        if (e.button === 0) {
+          isDragging = true;
+          lastMouseX = e.clientX;
+          lastMouseY = e.clientY;
+        }
+      });
+
+      // rilascio del mouse
+      document.addEventListener("mouseup", function() {
+        isDragging = false;
+      });
+
+      // spostamento del mouse
+      document.addEventListener("mousemove", function(e) {
+        if (!isDragging) return; // Se NON stai tenendo premuto il tasto sinistro esce
+
+        // Calcola di quanti pixel si è mosso il cursore dall'ultimo frame
+        const deltaX = e.clientX - lastMouseX;
+        const deltaY = e.clientY - lastMouseY;
+
+        // Modifica gli angoli della camera (sensibilità = 0.3)
+        rotazioneOrizzontale -= deltaX * 0.3;
+        inclinazioneVerticale += deltaY * 0.3;
+
+        // Limita l'inclinazione per non andare sotto terra o capovolgere la visuale
+        inclinazioneVerticale = Math.max(INCLINAZIONE_MIN, Math.min(INCLINAZIONE_MAX, inclinazioneVerticale));
+
+        // Aggiorna le posizioni per il prossimo spostamento
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        // si applicano i cambiamenti nella scena
+        aggiornaCamera();
+      });
+
+      document.addEventListener("wheel", function(e) {
+        distanza += e.deltaY * 0.03; // e.deltaY misura la velocità/direzione della rotellina
+        distanza = Math.max(DIST_MIN, Math.min(DIST_MAX, distanza));
+        aggiornaCamera();
+      });
+
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "r" || e.key === "R") resetCamera();
+      });
+
+      // Previene il menu contestuale del tasto destro del mouse per non rovinare la scena
+      document.addEventListener("contextmenu", function(e) {
+        e.preventDefault();
+      });
+
+      function resetCamera() {
+        rotazioneOrizzontale = 0;
+        inclinazioneVerticale = 30;
+        distanza = 35;
+        aggiornaCamera();
+      }
+
+  
+      // MQTT
       const client = new Paho.MQTT.Client(BROKER_IP, BROKER_PORT, CLIENT_ID);
 
       client.onMessageArrived = function(message) {
-        const topic = message.destinationName;
-
+        const topic = message.destinationName; // nome del canale
         let payload;
-        try {
+        try { // converte json in oggetto js leggibile
           payload = JSON.parse(message.payloadString);
-        } catch(e) {
-          console.log("Errore parsing JSON:", e);
-          return;
-        }
-        // pos giocatore
+        } catch(e) { return; }
+
         if (topic === "unity/player/position") {
-          playerEl.setAttribute("position", {
-            x: payload.x,
-            y: payload.y,
-            z: payload.z
-          });
-        } // pos palla
+          playerEl.setAttribute("position", {x: payload.x, y: payload.y, z: payload.z});
+          uiPlayerX.textContent = payload.x.toFixed(2);
+          uiPlayerZ.textContent = payload.z.toFixed(2);
+        }
         else if (topic === "unity/palla/position") {
-          pallaEl.setAttribute("position", {
-            x: payload.x,
-            y: payload.y,
-            z: payload.z
-          });
+          pallaEl.setAttribute("position", {x: payload.x, y: payload.y, z: payload.z});
+          uiPallaX.textContent = payload.x.toFixed(2);
+          uiPallaZ.textContent = payload.z.toFixed(2);
         }
-        // punteggio
         else if (topic === "unity/game/score") {
-          scoreText.setAttribute("value", "Punti: " + payload.punteggio);
+          uiPunti.textContent = payload.punteggio;
         }
-        // stato
         else if (topic === "unity/game/state") {
-          statoText.setAttribute("value", "Stato: " + payload.stato);
-          statoText.setAttribute("color", payload.stato === "play" ? "#00ff00" : "#ff0000");
+          if (payload.stato === "play") {
+            uiStatoBadge.textContent = "PLAY";
+            uiStatoBadge.style.background = "#00aa44";
+          } else {
+            uiStatoBadge.textContent = "PAUSA";
+            uiStatoBadge.style.background = "#aa4400";
+          }
         }
       };
 
-      client.onConnectionLost = function(response) {
-        console.log("Connessione persa:", response.errorMessage);
+      client.onConnectionLost = function() {
         statusEl.textContent = "● Disconnesso";
         statusEl.className = "";
         setTimeout(connetti, 3000);
@@ -183,7 +319,6 @@
       function connetti() {
         client.connect({
           onSuccess: function() {
-            console.log("Connesso al broker MQTT!");
             statusEl.textContent = "● Connesso";
             statusEl.className = "connesso";
             client.subscribe("unity/player/position");
@@ -191,8 +326,7 @@
             client.subscribe("unity/game/score");
             client.subscribe("unity/game/state");
           },
-          onFailure: function(err) {
-            console.log("Errore connessione:", err.errorMessage);
+          onFailure: function() {
             statusEl.textContent = "● Disconnesso";
             statusEl.className = "";
             setTimeout(connetti, 3000);
