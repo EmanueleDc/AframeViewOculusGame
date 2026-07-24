@@ -126,13 +126,13 @@
       <a-light type="directional" position="10 20 10" intensity="0.8"></a-light>
 
       <!-- Pavimento -->
-      <a-box position="0 0 0" width="30" height="0.5" depth="30" color="#9c3e27"></a-box>
+      <a-box position="3 0 -3.5" width="30" height="0.5" depth="30" color="#9c3e27"></a-box>
 
       <!-- Muri -->
-      <a-box position="0 3 -15" width="30" height="6" depth="0.5" color="#3a3a3a"></a-box>
-      <a-box position="0 1.5 15" width="30" height="3" depth="0.5" color="#3a3a3a"></a-box>
-      <a-box position="-15 1.5 0" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
-      <a-box position="15 1.5 0" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
+      <a-box position="3 1.5 -18.5" width="30" height="3" depth="0.5" color="#3a3a3a"></a-box>
+      <a-box position="3 3 11.5" width="30" height="6" depth="0.5" color="#3a3a3a"></a-box>
+      <a-box position="-12 1.5 -3.5" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
+      <a-box position="18 1.5 -3.5" width="0.5" height="3" depth="30" color="#3a3a3a"></a-box>
 
       <!-- Player -->
       <a-cylinder id="player" position="0 1 0" radius="0.5" height="2" color="#0066ff"></a-cylinder>
@@ -141,10 +141,10 @@
       <a-sphere id="palla" position="1 1 1" radius="0.5" color="#ff4400"></a-sphere>
 
       <!-- Palo canestro -->
-      <a-cylinder position="5 2 -13" radius="0.15" height="4" color="#888888"></a-cylinder>
+      <a-cylinder position="6 2 10" radius="0.15" height="4" color="#888888"></a-cylinder>
 
       <!-- Tabellone -->
-      <a-box position="5 4.5 -12.9" width="3" height="2" depth="0.2" color="#9c3e27"></a-box>
+      <a-box position="6 4.5 10" width="3" height="2" depth="0.2" color="#9c3e27"></a-box>
 
       <!-- CAMERA CON DOPPIO PIVOT PER ORBITA 3D COMPLETA -->
       <a-entity id="pivot-orizzontale" position="0 0 0">
@@ -162,7 +162,7 @@
     </a-scene>
 
     <script>
-      const BROKER_IP = "192.168.66.121";
+      const BROKER_IP = "192.168.66.111";
       const BROKER_PORT = 9001;
       const CLIENT_ID = "aframe_" + Math.random().toString(16).substr(2, 8);
 
